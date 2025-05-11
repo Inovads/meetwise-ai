@@ -22,11 +22,11 @@ const Auth = () => {
   useEffect(() => {
     const handlePasswordReset = async () => {
       const hash = window.location.hash;
-      const params = new URLSearchParams(hash.replace('#', ''));
-      const type = params.get('type');
-      const access_token = params.get('access_token');
-      
-      if (type === 'recovery' && access_token) {
+      const params = new URLSearchParams(hash.replace("#", ""));
+      const type = params.get("type");
+      const access_token = params.get("access_token");
+
+      if (type === "recovery" && access_token) {
         console.log("Detected reset password flow");
         setIsResetPassword(true);
         setIsLogin(false);
@@ -43,42 +43,50 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        console.log("Attempting to sign in with:", email);
+        console.log("📩 Attempting login with:", { email, password });
+
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        
-        if (error) throw error;
-        
-        console.log("Sign in successful:", data);
-        
+
+        if (error) {
+          console.error("❌ Login error:", error.message);
+          throw error;
+        }
+
+        console.log("✅ Sign in successful:", data);
+
         const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
+          .from("profiles")
+          .select("*")
+          .eq("id", data.user.id)
           .single();
-          
+
         if (profileError) throw profileError;
-        
-        console.log("Profile fetch successful:", profileData);
+
+        console.log("👤 Profile fetch successful:", profileData);
         navigate("/");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-            },
-          },
-        });
-        if (error) throw error;
-        toast({
-          title: "Success!",
-          description: "Please check your email to verify your account.",
-        });
+        return;
       }
+
+      // Signup
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Please check your email to verify your account.",
+      });
     } catch (error: any) {
       console.error("Full error object:", error);
       toast({
@@ -99,9 +107,9 @@ const Auth = () => {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
-      
+
       if (error) throw error;
-      
+
       toast({
         title: "Check your email",
         description: "We've sent you a password reset link.",
@@ -135,24 +143,22 @@ const Auth = () => {
     try {
       console.log("Attempting to reset password");
       const hash = window.location.hash;
-      const params = new URLSearchParams(hash.replace('#', ''));
-      const access_token = params.get('access_token');
+      const params = new URLSearchParams(hash.replace("#", ""));
+      const access_token = params.get("access_token");
 
       if (!access_token) {
         throw new Error("No access token found in URL");
       }
 
-      // First verify the recovery token
       const { error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: access_token,
-        type: 'recovery'
+        type: "recovery",
       });
 
       if (verifyError) throw verifyError;
 
-      // Then update the password
       const { error: updateError } = await supabase.auth.updateUser({
-        password: password
+        password: password,
       });
 
       if (updateError) throw updateError;
@@ -160,11 +166,11 @@ const Auth = () => {
       console.log("Password reset successful");
       toast({
         title: "Success",
-        description: "Your password has been reset successfully. Please sign in with your new password.",
+        description:
+          "Your password has been reset successfully. Please sign in with your new password.",
       });
-      
-      // Clear the URL hash and redirect to login
-      window.location.hash = '';
+
+      window.location.hash = "";
       navigate("/auth");
       setIsResetPassword(false);
       setIsLogin(true);
@@ -180,8 +186,6 @@ const Auth = () => {
     }
   };
 
-  // ... keep existing code (render method with form JSX)
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
@@ -189,20 +193,20 @@ const Auth = () => {
           <h2 className="text-2xl font-bold">
             {isResetPassword
               ? "Reset Your Password"
-              : isForgotPassword 
-                ? "Reset Password"
-                : isLogin 
-                  ? "Sign In" 
-                  : "Sign Up"}
+              : isForgotPassword
+              ? "Reset Password"
+              : isLogin
+              ? "Sign In"
+              : "Sign Up"}
           </h2>
           <p className="text-muted-foreground mt-2">
             {isResetPassword
               ? "Enter your new password below"
               : isForgotPassword
-                ? "Enter your email to receive a password reset link"
-                : isLogin
-                  ? "Welcome back! Please sign in to continue."
-                  : "Create an account to get started."}
+              ? "Enter your email to receive a password reset link"
+              : isLogin
+              ? "Welcome back! Please sign in to continue."
+              : "Create an account to get started."}
           </p>
         </div>
 
@@ -217,7 +221,6 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Enter your new password"
-                autoComplete="new-password"
               />
             </div>
 
@@ -230,15 +233,10 @@ const Auth = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 placeholder="Confirm your new password"
-                autoComplete="new-password"
               />
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Resetting..." : "Reset Password"}
             </Button>
           </form>
@@ -253,15 +251,10 @@ const Auth = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="Enter your email"
-                autoComplete="email"
               />
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Sending..." : "Send Reset Link"}
             </Button>
 
@@ -286,7 +279,6 @@ const Auth = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="Enter your email"
-                autoComplete="email"
               />
             </div>
 
@@ -300,7 +292,6 @@ const Auth = () => {
                   onChange={(e) => setFullName(e.target.value)}
                   required
                   placeholder="Enter your full name"
-                  autoComplete="name"
                 />
               </div>
             )}
@@ -314,7 +305,6 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Enter your password"
-                autoComplete={isLogin ? "current-password" : "new-password"}
               />
               {isLogin && (
                 <div className="text-right">
@@ -329,11 +319,7 @@ const Auth = () => {
               )}
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading
                 ? "Loading..."
                 : isLogin
